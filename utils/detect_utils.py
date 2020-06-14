@@ -86,7 +86,7 @@ def detect_rot_scale(template_rot, source_rot, model_template_rot, model_source_
     # compute_loss = torch.nn.MSELoss()
     # compute_loss=torch.nn.L1Loss()
 
-    return rotation_cal, scale_cal
+    return rotation_cal, scale_cal, corr_result_rot
 
 def detect_translation(template_trans, source_trans, rotation, scale, model_template_trans, model_source_trans, model_corr2softmax_trans, device ):
     print("                             ")
@@ -157,7 +157,7 @@ def detect_translation(template_trans, source_trans, rotation, scale, model_temp
     print("trans y", tranformation_y)
 
 
-    return tranformation_y, tranformation_x
+    return tranformation_y, tranformation_x, corr_result_trans
 
 
 

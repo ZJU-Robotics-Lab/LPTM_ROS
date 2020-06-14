@@ -1,8 +1,6 @@
 Header header
-sensor_msgs/Image ColorImage
-sensor_msgs/Image DepthImage
-string[] class_name_of_the_box
-string[] x_position_of_the_box_DownLeft_corner
-string[] y_position_of_the_box_DownLeft_corner
-string[] x_position_of_the_box_UpRight_corner
-string[] y_position_of_the_box_UpRight_corner
+sensor_msgs/Image TemplateImage
+sensor_msgs/Image SourceImage
+uint16 particale_number
+uint16[] x_position_of_partical
+uint16[] y_position_of_partical
