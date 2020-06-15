@@ -49,7 +49,7 @@ def cv_bridge( img_msg):
             cv_bridge file to convert the msg::Img to np.ndarray
         """
         color_msg = img_msg
-        # print("encoding=====", img_msg.encoding)
+        print("encoding=====", img_msg.encoding)
         #set different dtype based on different encoding type
         if 'C' in img_msg.encoding:
             map_dtype = {'U': 'uint', 'S': 'int', 'F': 'float'}
@@ -66,7 +66,7 @@ def cv_bridge( img_msg):
             
         dtype = dtype.newbyteorder('>' if img_msg.is_bigendian else '<')
         img1 = np.ndarray(shape=(img_msg.height, img_msg.width, n_channels),
-                        dtype=dtype, buffer=img_msg.data)
+                        dtype=dtype)#, buffer=img_msg.data)
         img1 = np.squeeze(img1)
         if img_msg.is_bigendian == (sys.byteorder == 'little'):
             img1 = img1.byteswap().newbyteorder()

@@ -1,3 +1,3 @@
 Header header
-uint16 particale_number
+uint16 particle_number
 float32[] weights_for_particle
