@@ -1,0 +1,10 @@
+*.jpg
+*.png
+*.bag
+*.pth
+*.pt
+*.pyc
+*.ipynb
+
+build/
+devel/
