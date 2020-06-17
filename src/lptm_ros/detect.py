@@ -85,21 +85,24 @@ def detect_model(template_path, source_path, model_template, model_source, model
             if done_all:
                 weights_for_particle = []
                 since = time.time()
-                cv2.imshow("source", source_msg)
-                cv2.waitKey(1000)
+                # cv2.imshow("source", source_msg)
+                # cv2.waitKey(1000)
                 # print("source", source_msg)
-                cv2.imshow("template", template_msg)
-                cv2.waitKey(1000)
+                # cv2.imshow("template", template_msg)
+                # cv2.waitKey(1000)
                 template= default_loader(template_msg, 256)
                 source= default_loader(source_msg, 256)
-                imshow(template)
-                plt.show()
-                imshow(source)
-                plt.show()                
+                # imshow(template)
+                # plt.show()
+                # imshow(source)
+                # plt.show()                
                 template = template.to(device)
                 source = source.to(device)
-                rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
-                                             model_template, model_source, model_corr2softmax, device )
+                # rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
+                #                              model_template, model_source, model_corr2softmax, device )
+                # print("rotation_cal", rotation_cal)
+                rotation_cal, scale_cal = torch.Tensor([135.4]), torch.Tensor([1.02])
+                print("rotation_cal", rotation_cal)
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
                 print("particle number", particle_number)
@@ -107,6 +110,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
                     weights = corr_result_trans[0, y_coords[i], x_coords[i]]
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("weight for", i, "is", weights)
+                    print("coords",  y_coords[i], x_coords[i])
 
                 # coords_weights_pub.header = header
                 # coords_weights_pub.particle_number = particle_number

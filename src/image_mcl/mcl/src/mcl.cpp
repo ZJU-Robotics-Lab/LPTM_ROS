@@ -17,7 +17,7 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/src/pixel_1.png"); //grdiamp for use.
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
-  cout<< gridMapCV.cols << " " << gridMapCV.rows << endl;
+  cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
   numOfParticle = 1000; // Number of Particles.
@@ -31,7 +31,8 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[4] = 0.1; // X
   odomCovariance[5] = 0.1; // Y
   template_size = 180; // Template(square) size
-  init_angle = 360-224.6; // Rotation init guess [degree]
+  init_angle = 0; // Rotation init guess [degree]
+  init_scale = 2;
   angle_search_area = 3; // Searching area [degree]
 
   //--DO NOT TOUCH THIS PARAMETERS--//
@@ -265,6 +266,7 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_m
   cv::Mat image;
 
   image = tool::cvRotateMat(template_image, init_angle);
+  // image = tool::cvResizeMat(image,init_scale);
   int particle_number = 0;
   int* particles_position_y, particles_position_x;
   image_mcl::image_coords img_coords;

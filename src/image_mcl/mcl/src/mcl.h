@@ -44,6 +44,7 @@ private:
 
   float imageResolution;
   float init_angle;
+  float init_scale;
   float angle_search_area;
   float mapCenterX;
   float mapCenterY;
