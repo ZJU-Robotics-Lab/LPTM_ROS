@@ -101,16 +101,26 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 # rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
                 #                              model_template, model_source, model_corr2softmax, device )
                 # print("rotation_cal", rotation_cal)
-                rotation_cal, scale_cal = torch.Tensor([135.4]), torch.Tensor([1.02])
+                rotation_cal, scale_cal = torch.Tensor([168]), torch.Tensor([1.02])
                 print("rotation_cal", rotation_cal)
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
+                soft_corr_trans = model_trans_corr2softmax(corr_result_trans)
+                # soft_corr_trans = nn.functional.softmax(soft_corr_trans)
                 print("particle number", particle_number)
+                # imshow(corr_result_trans[0,:,:])
+                # plt.show()
+                # plt.close()
                 for i in range(particle_number):
-                    weights = corr_result_trans[0, y_coords[i], x_coords[i]]
+                    # print("x", x_coords[i], "y", y_coords[i])
+                    if y_coords[i]>=180 or y_coords[i] <= 0 or x_coords[i] >= 180 or x_coords[i] <= 0:
+                        weights = torch.Tensor([0])
+                    else:
+                        weights = soft_corr_trans[0, int(y_coords[i]*256/180), int(x_coords[i]*256/180)]
+                    # print("Weights", weights)
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("weight for", i, "is", weights)
-                    print("coords",  y_coords[i], x_coords[i])
+                    # print("coords",  y_coords[i], x_coords[i])
 
                 # coords_weights_pub.header = header
                 # coords_weights_pub.particle_number = particle_number
@@ -127,7 +137,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/laser_sat_qsdjt_9epoch.pt"
+    checkpoint_path = "./checkpoints/rot_scale_trans_gym_37.pt"
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"

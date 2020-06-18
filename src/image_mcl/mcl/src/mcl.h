@@ -49,6 +49,8 @@ private:
   float mapCenterX;
   float mapCenterY;
   float odomCovariance[6];
+  float weights_visual[1000];
+  float maxScore;
   int numOfParticle;
   std::vector<particle> particles;
   particle maxProbParticle;
@@ -56,6 +58,7 @@ private:
   cv::Mat gridMapCV; // Gridmap for use (gaussian-blurred)
   Eigen::Matrix4f tf_laser2robot;
   Eigen::Matrix4f odomBefore;
+  Eigen::Matrix4f pose_show;
 
   ros::NodeHandle nodeHandle_;
   ros::Publisher particle_pose_pub;
@@ -79,14 +82,14 @@ private:
   void weightning(Eigen::Matrix4Xf laser);
   void weightning_NCC(cv::Mat template_image);
   void resampling();
-  void LPTM(cv::Mat template_image, Eigen::Matrix4f pose, const nav_msgs::Odometry::ConstPtr & odom);
+  void LPTM(cv::Mat template_image, Eigen::Matrix4f pose);
   void showInMap();
 
 public:
   mcl(ros::NodeHandle nodeHandle);
   ~mcl();
   void updateLaserData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser);
-  void updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement, const nav_msgs::Odometry::ConstPtr & odom);
+  void updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement);
   // float NCC(cv::Mat template_image, cv::Mat global_roi);
 };
 

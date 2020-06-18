@@ -49,7 +49,7 @@ def cv_bridge( img_msg):
             cv_bridge file to convert the msg::Img to np.ndarray
         """
         color_msg = img_msg
-        print("encoding=====", img_msg.encoding)
+        # print("encoding=====", img_msg.encoding)
         #set different dtype based on different encoding type
         if 'C' in img_msg.encoding:
             map_dtype = {'U': 'uint', 'S': 'int', 'F': 'float'}

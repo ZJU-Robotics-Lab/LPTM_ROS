@@ -14,7 +14,7 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   gen.seed(rd()); //Set random seed for random engine
   Mat temp;
 
-  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/src/pixel_1.png"); //grdiamp for use.
+  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/src/pixel_1_rot.png"); //grdiamp for use.
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
@@ -24,12 +24,12 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   minOdomDistance = 0.1; // [m]
   minOdomAngle = 0; // [deg]
   repropagateCountNeeded = 1; // [num]
-  odomCovariance[0] = 0.00; // Rotation to Rotation
-  odomCovariance[1] = 0.00; // Translation to Rotation
-  odomCovariance[2] = 0.00; // Translation to Translation
-  odomCovariance[3] = 0.00; // Rotation to Translation
-  odomCovariance[4] = 0.1; // X
-  odomCovariance[5] = 0.1; // Y
+  odomCovariance[0] = 0.01; // Rotation to Rotation
+  odomCovariance[1] = 0.01; // Translation to Rotation
+  odomCovariance[2] = 0.01; // Translation to Translation
+  odomCovariance[3] = 0.01; // Rotation to Translation
+  odomCovariance[4] = 0.11; // X
+  odomCovariance[5] = 0.11; // Y
   template_size = 180; // Template(square) size
   init_angle = 0; // Rotation init guess [degree]
   init_scale = 2;
@@ -60,15 +60,15 @@ mcl::~mcl()
 void mcl::initializeParticles()
 {
   particles.clear();
-  std::uniform_real_distribution<float> x_pos(0, gridMapCV.cols * imageResolution / 4);
-  std::uniform_real_distribution<float> y_pos(10, 1 * gridMapCV.rows * imageResolution / 5); //heuristic setting. (to put particles into the map)
+  std::uniform_real_distribution<float> x_pos(0, template_size * imageResolution);
+  std::uniform_real_distribution<float> y_pos(0, template_size * imageResolution); //heuristic setting. (to put particles into the map)
 
   //SET PARTICLES BY RANDOM DISTRIBUTION
   for(int i=0;i<numOfParticle;i++)
   {
     particle particle_temp;
-    float randomX = x_pos(gen);
-    float randomY = y_pos(gen);
+    float randomX = x_pos(gen) +27.5;
+    float randomY = y_pos(gen) +25.4;
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
     particle_temp.score = 1 / (double)numOfParticle;
@@ -139,53 +139,53 @@ void mcl::prediction(Eigen::Matrix4f diffPose)
 
 }
 
-void mcl::weightning(Eigen::Matrix4Xf laser)
-{
-  float maxScore = 0;
-  float scoreSum = 0;
+// void mcl::weightning(Eigen::Matrix4Xf laser)
+// {
+//   float maxScore = 0;
+//   float scoreSum = 0;
 
-  /* Your work.
-   * Input : laser measurement data
-   * To do : update particle's weight(score)
-   */
+//   /* Your work.
+//    * Input : laser measurement data
+//    * To do : update particle's weight(score)
+//    */
 
-  for(int i=0;i<particles.size();i++)
-  {
+//   for(int i=0;i<particles.size();i++)
+//   {
 
-    Eigen::Matrix4Xf transLaser = particles.at(i).pose* tf_laser2robot* laser; // now this is lidar sensor's frame.
+//     Eigen::Matrix4Xf transLaser = particles.at(i).pose* tf_laser2robot* laser; // now this is lidar sensor's frame.
 
-    //--------------------------------------------------------//
+//     //--------------------------------------------------------//
 
-    float calcedWeight = 0;
+//     float calcedWeight = 0;
 
-    for(int j=0;j<transLaser.cols();j++)
-    {
-      int ptX  = static_cast<int>((transLaser(0, j) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
-      int ptY = static_cast<int>((transLaser(1, j) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
+//     for(int j=0;j<transLaser.cols();j++)
+//     {
+//       int ptX  = static_cast<int>((transLaser(0, j) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
+//       int ptY = static_cast<int>((transLaser(1, j) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
 
-      if(ptX<0 || ptX>=gridMapCV.cols || ptY<0 ||  ptY>=gridMapCV.rows) continue; // dismiss if the laser point is at the outside of the map.
-      else
-      {
-        double img_val =  gridMapCV.at<uchar>(ptY,ptX)/(double)255; //calculate the score.
-        calcedWeight += img_val; //sum up the score.
-      }
+//       if(ptX<0 || ptX>=gridMapCV.cols || ptY<0 ||  ptY>=gridMapCV.rows) continue; // dismiss if the laser point is at the outside of the map.
+//       else
+//       {
+//         double img_val =  gridMapCV.at<uchar>(ptY,ptX)/(double)255; //calculate the score.
+//         calcedWeight += img_val; //sum up the score.
+//       }
 
 
-    }
-    particles.at(i).score = particles.at(i).score + (calcedWeight / transLaser.cols()); //Adding score to particle.
-    scoreSum += particles.at(i).score;
-    if(maxScore < particles.at(i).score) // To check which particle has max score
-    {
-      maxProbParticle = particles.at(i);
-      maxProbParticle.scan = laser;
-      maxScore = particles.at(i).score;
-    }
-  }
-  for(int i=0;i<particles.size();i++)
-  {
-    particles.at(i).score = particles.at(i).score/scoreSum; // normalize the score
-  }
-}
+//     }
+//     particles.at(i).score = particles.at(i).score + (calcedWeight / transLaser.cols()); //Adding score to particle.
+//     scoreSum += particles.at(i).score;
+//     if(maxScore < particles.at(i).score) // To check which particle has max score
+//     {
+//       maxProbParticle = particles.at(i);
+//       maxProbParticle.scan = laser;
+//       maxScore = particles.at(i).score;
+//     }
+//   }
+//   for(int i=0;i<particles.size();i++)
+//   {
+//     particles.at(i).score = particles.at(i).score/scoreSum; // normalize the score
+//   }
+// }
 
 void mcl::resampling()
 {
@@ -228,12 +228,11 @@ void mcl::showInMap()
 
   for(int i=0;i<numOfParticle;i++)
   {
-    float part_x = (particles.at(i).pose(0, 3)) / imageResolution;
-    float part_y = (particles.at(i).pose(1, 3)) / imageResolution;
+    float part_x = (particles.at(i).pose(0, 3)) / imageResolution - template_size/2;
+    float part_y = (particles.at(i).pose(1, 3)) / imageResolution - template_size/2;
 
-    int xPos  = static_cast<int>(std::round(part_x) + template_size / 2);
-    int yPos = static_cast<int>(std::round(part_y) + template_size / 2);
-
+    int xPos  = static_cast<int>(std::round(part_x));
+    int yPos = static_cast<int>(std::round(part_y));
     cv::circle(showMap,cv::Point(xPos,yPos),1,cv::Scalar(255,0,0),-1);
   }
   if(maxProbParticle.score > 0)
@@ -250,18 +249,19 @@ void mcl::showInMap()
       x_all = x_all + particles.at(i).pose(0,3) * particles.at(i).score;
       y_all = y_all + particles.at(i).pose(1,3) * particles.at(i).score;
     }
-    int xPos = static_cast<int>(std::round(x_all / imageResolution) + template_size / 2);
-    int yPos = static_cast<int>(std::round(y_all / imageResolution) + template_size / 2);
+    int xPos = static_cast<int>(std::round((x_all) / imageResolution) - template_size/2);
+    int yPos = static_cast<int>(std::round((y_all) / imageResolution) - template_size/2);
 
     cv::circle(showMap,cv::Point(xPos,yPos),2,cv::Scalar(0,0,255),-1);
 
   }
+  cv::circle(showMap,cv::Point(pose_show(0,3)/ imageResolution, pose_show(1,3)/ imageResolution),2,cv::Scalar(0,255,0),-1);
 
   cv::imshow("MCL2", showMap);
   cv::waitKey(1);
 }
 
-void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_msgs::Odometry::ConstPtr & odom)
+void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose)
 {
   cv::Mat image;
 
@@ -272,17 +272,16 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_m
   image_mcl::image_coords img_coords;
 
   cv::Mat global_imroi;
-  cv::Rect rect(int(current_pose(0,3) / imageResolution), int(current_pose(1,3) / imageResolution), image.cols, image.rows);
-  // cout << "particle_pose(0,3) = " << current_pose(0,3) / imageResolution << " particle_pose(1,3) = " << current_pose(1,3) / imageResolution << " image.rows = " << image.rows << " image.cols = " << image.cols << endl;
+  int rect_upperleft_x = int(current_pose(0,3) / imageResolution) - template_size/2;
+  int rect_upperleft_y = int(current_pose(1,3) / imageResolution) - template_size/2;
+  cv::Rect rect(rect_upperleft_x, rect_upperleft_y, image.cols, image.rows);
   // cv::Rect rect(100, 100, 48, 48);
   global_imroi = gridMapCV(rect);
   
-  cv::imshow("particle view", global_imroi);
-  cv::waitKey(0);
-  cv::imshow("particle viewhsahahahahahA", template_image);
-  cv::waitKey(0);
-  // cout << "global_imroi shape" << global_imroi.type() << endl;
-  // cout << "global_imroi shape" << template_image.type() << endl;
+  cv::imshow("Aerial View", global_imroi);
+  cv::waitKey(1);
+  cv::imshow("Ground View", template_image);
+  cv::waitKey(1);
   for(auto iter=particles.begin(); iter!=particles.end(); )
   {
     Eigen::Matrix4Xf particle_pose = iter->pose;
@@ -296,8 +295,11 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_m
     // }else{
     //   iter->score = 0;
     // }
-    srv.request.x_position_of_particle.push_back((particle_pose(1,3)));
-    srv.request.y_position_of_particle.push_back((particle_pose(0,3)));
+  
+    srv.request.x_position_of_particle.push_back((particle_pose(0,3)/imageResolution) - rect_upperleft_x - template_size/2);
+    srv.request.y_position_of_particle.push_back((particle_pose(1,3)/imageResolution) - rect_upperleft_y - template_size/2);
+    // cout << "particle "<<particle_pose(0,3)/imageResolution<<endl;
+    // cout << "left pose " << rect_upperleft_y<< endl;
     particle_number ++;
     iter++;
   }
@@ -317,21 +319,22 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_m
   {
     ROS_INFO("particle number: %d, response: %d ", particles.size(), srv.response.weights_for_particle.size());
 
-    float maxScore = 0;
+    maxScore = 0;
     float scoreSum = 0;
 
     for(auto i=0; i < srv.response.weights_for_particle.size(); i++)
     {
-      particles.at(i).score = srv.response.weights_for_particle[i]; 
+      particles.at(i).score = srv.response.weights_for_particle[i] * 100; 
       scoreSum += particles.at(i).score;
+      weights_visual[i] = particles.at(i).score;
+      // cout << "score" << particles.at(i).score << endl;
       if(maxScore < particles.at(i).score) // To check which particle has max score
       {
         maxProbParticle = particles.at(i);
         maxScore = particles.at(i).score;
       }
     }
-
-    cout << " max score = "<< maxScore << endl;
+    cout << "Max score" << maxScore << endl;
     for(int i=0;i<particles.size();i++)
     {
       particles.at(i).score = particles.at(i).score/scoreSum; // normalize the score
@@ -351,13 +354,15 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose, const nav_m
   // particle_pose_pub.publish(img_coords);
 }
 
-void mcl::updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement, const nav_msgs::Odometry::ConstPtr & odom)
+void mcl::updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement)
 {
   if(!isOdomInitialized)
   {
+    
     odomBefore = pose; // Odom used at last prediction.
     isOdomInitialized = true;
   }
+  pose_show = pose;
   Eigen::Matrix4f diffOdom = odomBefore.inverse() * pose; // odom after = odom New * diffOdom
   Eigen::VectorXf diffxyzrpy = tool::eigen2xyzrpy(diffOdom); // {x,y,z,roll,pitch,yaw}
   float diffDistance = sqrt(pow(diffxyzrpy[0],2) + pow(diffxyzrpy[1],2));
@@ -376,7 +381,7 @@ void mcl::updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement, const
     // cv::waitKey();
     // weightning_NCC(local_measurement);
   
-    LPTM(local_measurement, pose, odom);
+    LPTM(local_measurement, pose);
     get_weights.Wait();
 
     predictionCounter++;

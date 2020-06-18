@@ -45,13 +45,15 @@ class mcl_node
                   0,0,0,1;
       // cout << "eigenPose" << eigenPose << endl;
       Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,0);
-      eigenPose = static_rot * eigenPose;
-      cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
+      eigenPose = eigenPose * static_rot;
+      eigenPose(0,3) += 27.5;
+      eigenPose(1,3) += 25.4;
+      // cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
 
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
       cv::Mat img = cv_ptr -> image;
 
-      mclocalizer.updateImageData(eigenPose, img, odom);
+      mclocalizer.updateImageData(eigenPose, img);
     };
 
     mcl mclocalizer;
