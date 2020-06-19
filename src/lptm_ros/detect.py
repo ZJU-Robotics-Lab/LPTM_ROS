@@ -43,7 +43,7 @@ def handle_compute_weight(req):
 
 def add_server():
     s = rospy.Service('compute_weight_server', ComputePtWeights, handle_compute_weight)
-    print("Read to provide service")
+    print("Ready to provide service")
     rospy.spin()
 
 # def callback_all(data):
@@ -106,7 +106,13 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
                 soft_corr_trans = model_trans_corr2softmax(corr_result_trans)
-                # soft_corr_trans = nn.functional.softmax(soft_corr_trans)
+                soft_corr_trans.view(-1)
+                m = nn.Softmax(dim=1)
+                soft_corr_trans = m(soft_corr_trans)
+                soft_corr_trans.reshape([1,256,256])
+                # soft_corr_trans = softmax2d(soft_corr_trans, device)
+
+                # print("soft_corr_trans", soft_corr_trans)
                 print("particle number", particle_number)
                 # imshow(corr_result_trans[0,:,:])
                 # plt.show()
@@ -114,9 +120,9 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 for i in range(particle_number):
                     # print("x", x_coords[i], "y", y_coords[i])
                     if y_coords[i]>=180 or y_coords[i] <= 0 or x_coords[i] >= 180 or x_coords[i] <= 0:
-                        weights = torch.Tensor([0])
+                        weights = torch.Tensor([0]).to(device)
                     else:
-                        weights = soft_corr_trans[0, int(y_coords[i]*256/180), int(x_coords[i]*256/180)]
+                        weights = soft_corr_trans[0, 255-int(y_coords[i]*256/180), 255-int(x_coords[i]*256/180)]
                     # print("Weights", weights)
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("weight for", i, "is", weights)
@@ -137,7 +143,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/rot_scale_trans_gym_37.pt"
+    checkpoint_path = "./checkpoints/dsnt_x_y_overfit.pt"
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"
@@ -169,7 +175,7 @@ if __name__ == '__main__':
     optimizer_trans_c2s = optim.Adam(filter(lambda p: p.requires_grad, model_corr2softmax.parameters()), lr=1e-1)
 
     # weights_pub = rospy.Publisher(weights_topic, coords_weights)
-    add_server()
+    
 
     if load_pretrained:
         model_template, model_source, model_corr2softmax, model_trans_template, model_trans_source, model_trans_corr2softmax,\
@@ -178,5 +184,5 @@ if __name__ == '__main__':
                                         checkpoint_path, model_template, model_source, model_corr2softmax, model_trans_template, model_trans_source, model_trans_corr2softmax,\
                                         optimizer_ft_temp, optimizer_ft_src, optimizer_c2s, optimizer_trans_ft_temp, optimizer_trans_ft_src, optimizer_trans_c2s, device)
 
-
+    add_server()
     # detect_model(template_path, source_path, model_template, model_source, model_corr2softmax, model_trans_template, model_trans_source, model_trans_corr2softmax)

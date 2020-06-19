@@ -28,8 +28,8 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[1] = 0.01; // Translation to Rotation
   odomCovariance[2] = 0.01; // Translation to Translation
   odomCovariance[3] = 0.01; // Rotation to Translation
-  odomCovariance[4] = 0.11; // X
-  odomCovariance[5] = 0.11; // Y
+  odomCovariance[4] = 0.08; // X
+  odomCovariance[5] = 0.08; // Y
   template_size = 180; // Template(square) size
   init_angle = 0; // Rotation init guess [degree]
   init_scale = 2;
@@ -68,7 +68,7 @@ void mcl::initializeParticles()
   {
     particle particle_temp;
     float randomX = x_pos(gen) +27.5;
-    float randomY = y_pos(gen) +25.4;
+    float randomY = y_pos(gen) +30.4;
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
     particle_temp.score = 1 / (double)numOfParticle;
@@ -201,7 +201,7 @@ void mcl::resampling()
     particleScores.push_back(scoreBaseline);
   }
 
-  std::uniform_real_distribution<double> dart(scoreBaseline/2, scoreBaseline);
+  std::uniform_real_distribution<double> dart(scoreBaseline/4, scoreBaseline);
   for(int i=0;i<particles.size();i++)
   {
     double darted = dart(gen); //darted number. (0 to maximum scores)
