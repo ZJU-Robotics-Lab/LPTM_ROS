@@ -14,7 +14,7 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   gen.seed(rd()); //Set random seed for random engine
   Mat temp;
 
-  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/src/pixel_1_rot.png"); //grdiamp for use.
+  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/src/qsdjt_mcl.png"); //grdiamp for use.
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
@@ -28,9 +28,9 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[1] = 0.01; // Translation to Rotation
   odomCovariance[2] = 0.01; // Translation to Translation
   odomCovariance[3] = 0.01; // Rotation to Translation
-  odomCovariance[4] = 0.08; // X
-  odomCovariance[5] = 0.08; // Y
-  template_size = 180; // Template(square) size
+  odomCovariance[4] = 0.1; // X
+  odomCovariance[5] = 0.1; // Y
+  template_size = 300; // Template(square) size
   init_angle = 0; // Rotation init guess [degree]
   init_scale = 2;
   angle_search_area = 3; // Searching area [degree]
@@ -67,8 +67,8 @@ void mcl::initializeParticles()
   for(int i=0;i<numOfParticle;i++)
   {
     particle particle_temp;
-    float randomX = x_pos(gen) +27.5;
-    float randomY = y_pos(gen) +30.4;
+    float randomX = x_pos(gen) +179.2;
+    float randomY = y_pos(gen) +19.3;
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
     particle_temp.score = 1 / (double)numOfParticle;
@@ -201,7 +201,7 @@ void mcl::resampling()
     particleScores.push_back(scoreBaseline);
   }
 
-  std::uniform_real_distribution<double> dart(scoreBaseline/4, scoreBaseline);
+  std::uniform_real_distribution<double> dart(scoreBaseline/8, scoreBaseline);
   for(int i=0;i<particles.size();i++)
   {
     double darted = dart(gen); //darted number. (0 to maximum scores)

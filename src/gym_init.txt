@@ -1,0 +1,6 @@
+rotation of template: 168 degree
+initial pose location: x:275px y:254px
+template size: 180 * 180
+
+start time : 10s
+start pose : 275px 304px

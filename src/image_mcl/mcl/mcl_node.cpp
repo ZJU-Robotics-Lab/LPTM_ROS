@@ -21,7 +21,7 @@ class mcl_node
     mcl_node(ros::NodeHandle nh):nodeHandle_(nh), 
       mclocalizer(nh),
       subscribe_image(nh,"/elevation_mapping/orthomosaic", 10),
-      subscribe_pose(nh, "/odom", 10),
+      subscribe_pose(nh, "/icp_odom", 10),
       sync(MySyncPolicy(10), subscribe_pose, subscribe_image)
     {
       sync.registerCallback(boost::bind(&mcl_node::callback, this, _1, _2));
@@ -38,7 +38,7 @@ class mcl_node
       //             m[1][0], m[1][1], m[1][2], -odom->pose.pose.position.y,
       //             m[2][0], m[2][1], m[2][2], odom->pose.pose.position.z,
       //             0,0,0,1;
-
+      cout << "hahahhahhahaha" << endl;
       eigenPose<< 1,0,0, odom->pose.pose.position.y,
                   0,1,0, odom->pose.pose.position.x,
                   0,0,1, odom->pose.pose.position.z,
@@ -46,8 +46,8 @@ class mcl_node
       // cout << "eigenPose" << eigenPose << endl;
       Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,0);
       eigenPose = eigenPose * static_rot;
-      eigenPose(0,3) += 27.5;
-      eigenPose(1,3) += 25.4;
+      eigenPose(0,3) += 174.2;
+      eigenPose(1,3) += 19.8;
       // cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
 
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);

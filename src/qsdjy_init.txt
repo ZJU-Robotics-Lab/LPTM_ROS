@@ -1,0 +1,6 @@
+-90.4 degree
+initial pose location x:1742.0436px y:198.0435px
+template size 300 *300
+
+start time : 15s
+start pose : 1792.0436px 193.04px

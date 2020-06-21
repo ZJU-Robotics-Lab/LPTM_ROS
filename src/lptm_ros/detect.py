@@ -67,7 +67,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
     # Each epoch has a training and validation phase
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu")
+    device = torch.device("cpu")
     phase = "val"
 
     model_template.eval()   # Set model to evaluate mode
@@ -101,7 +101,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 # rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
                 #                              model_template, model_source, model_corr2softmax, device )
                 # print("rotation_cal", rotation_cal)
-                rotation_cal, scale_cal = torch.Tensor([168]), torch.Tensor([1.02])
+                rotation_cal, scale_cal = torch.Tensor([-90.4]), torch.Tensor([1])
                 print("rotation_cal", rotation_cal)
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
@@ -119,10 +119,10 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 # plt.close()
                 for i in range(particle_number):
                     # print("x", x_coords[i], "y", y_coords[i])
-                    if y_coords[i]>=180 or y_coords[i] <= 0 or x_coords[i] >= 180 or x_coords[i] <= 0:
+                    if y_coords[i]>=180 or y_coords[i] < 0 or x_coords[i] >= 180 or x_coords[i] < 0:
                         weights = torch.Tensor([0]).to(device)
                     else:
-                        weights = soft_corr_trans[0, 255-int(y_coords[i]*256/180), 255-int(x_coords[i]*256/180)]
+                        weights = soft_corr_trans[0, int(y_coords[i]*256/180), int(x_coords[i]*256/180)]
                     # print("Weights", weights)
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("weight for", i, "is", weights)
@@ -143,7 +143,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/dsnt_x_y_overfit.pt"
+    checkpoint_path = "./checkpoints/laser_sat_qsdjt_9epoch.pt"
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     rospy.init_node('Detecter', anonymous=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("The devices that the code is running on:", device)
-    # device = torch.device("cpu")
+    device = torch.device("cpu")
     done1, done2, done_all = 0, 0,0
     coords_weights_pub = ComputePtWeightsResponse()
     
