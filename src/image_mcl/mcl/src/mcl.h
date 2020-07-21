@@ -78,11 +78,12 @@ private:
   std::mutex g_mutex;
 
   void initializeParticles();
-  void prediction(Eigen::Matrix4f diffPose);
+  void prediction(Eigen::Matrix4f diffPose, cv::Mat local_measurement);
   void weightning(Eigen::Matrix4Xf laser);
   void weightning_NCC(cv::Mat template_image);
   void resampling();
   void LPTM(cv::Mat template_image, Eigen::Matrix4f pose);
+  void showInMap(cv::Mat local_measurement);
   void showInMap();
 
 public:

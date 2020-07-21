@@ -16,6 +16,9 @@ from unet.pytorch_lptm import FFT2, UNet, LogPolar, PhaseCorr, Corr2Softmax
 from data.dataset_LPTM import *
 from tensorboardX import SummaryWriter
 from utils.utils import *
+import threading
+
+
 def detect_rot_scale(template_rot, source_rot, model_template_rot, model_source_rot, model_corr2softmax_rot, device):
     print("                             ")
     print("                             DETETCTING ROTATION AND SCALE")
@@ -64,7 +67,7 @@ def detect_rot_scale(template_rot, source_rot, model_template_rot, model_source_
     phase_corr_layer_rs = PhaseCorr(device, logbase_rot, model_corr2softmax_rot)
     rotation_cal, scale_cal, softmax_result_rot, corr_result_rot = phase_corr_layer_rs(template_logpolar, source_logpolar)
 
-
+    heatmap_show(corr_result_rot.cpu().numpy())
 
 # use phasecorr result
 
@@ -104,6 +107,20 @@ def detect_translation(template_trans, source_trans, rotation, scale, model_temp
     rot_mat = kornia.get_rotation_matrix2d(center, -angle_rot, 1/scale_rot)
     # source_trans = kornia.warp_affine(source_trans.to(device), rot_mat, dsize=(h, w))
     template_trans = kornia.warp_affine(template_trans.to(device), rot_mat, dsize=(h, w))
+    # def update():
+        # clear
+        # imshow(template_trans[0,:,:])
+        # plt.show()
+        # plt.pause(0.1)
+        # plt.close()
+        # imshow(source_trans[0,:,:])
+        # plt.show()
+        # plt.pause(0.1)
+        # plt.close()
+
+    # # use thread
+    # t = threading.Thread(target=update)
+    # t.start()
     # imshow(template_trans[0,:,:])
     # plt.show()
     # imshow(source_trans[0,:,:])
@@ -127,11 +144,11 @@ def detect_translation(template_trans, source_trans, rotation, scale, model_temp
 
     (b, h, w) = template_unet_trans.shape
     logbase_trans = torch.tensor(1.)
-    phase_corr_layer_xy = PhaseCorr(device, logbase_trans, model_corr2softmax_trans)
+    phase_corr_layer_xy = PhaseCorr(device, logbase_trans, model_corr2softmax_trans, trans=True)
     t0, t1, softmax_result_trans, corr_result_trans = phase_corr_layer_xy(template_unet_trans.to(device), source_unet_trans.to(device))
 
 # use phasecorr result
-
+    # print("Phasecorr",torch.min(corr_result_trans))
     corr_final_trans = corr_result_trans.clone()
     # corr_visual = corr_final_trans.unsqueeze(-1)
     # corr_visual = corr_visual.permute(0,3,1,2)

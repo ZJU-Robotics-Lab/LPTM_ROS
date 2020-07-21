@@ -16,5 +16,10 @@ namespace tool
   Eigen::VectorXf eigen2xyzrpy(Eigen::Matrix4f mat);
   Eigen::Matrix4f xyzrpy2eigen(float x, float y, float z, float roll, float pitch, float yaw);
   double GaussianRand();
+  cv::Mat createAlpha(cv::Mat& src);
+  int addAlpha(cv::Mat& src, cv::Mat& dst, cv::Mat& alpha);
+  cv::Mat RotateImage(cv::Mat src, double angle);
+  cv::Mat ResizeMat(cv::Mat src, double scale);
+
 }
 #endif

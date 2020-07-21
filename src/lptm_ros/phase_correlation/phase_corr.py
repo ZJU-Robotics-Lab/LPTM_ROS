@@ -43,13 +43,14 @@ def phase_corr(a, b, device, logbase, modelc2s, trans=False):
     r_imag = r[:, :, :, 1]
     r = torch.sqrt(r_real ** 2 + r_imag ** 2 + eps)
     r = fftshift2d(r)
-    if trans:
-        r[:,0:60,:]=0.
-        r[:,G_a.shape[1]-60:G_a.shape[1], :] = 0.
-        r[:,:, 0:60]=0.
-        r[:, :, G_a.shape[1]-60:G_a.shape[1]] = 0.
+    # if trans:
+    #     r[:,0:60,:]=0.
+    #     r[:,G_a.shape[1]-60:G_a.shape[1], :] = 0.
+    #     r[:,:, 0:60]=0.
+    #     r[:, :, G_a.shape[1]-60:G_a.shape[1]] = 0.
+    # plt.cla()
     # imshow(r[0,:,:])
-    # plt.show()
+    # plt.pause(0.1)
 # feed the result of phase correlation to the NET
     softargmax_input = modelc2s(r.clone())
 # suppress the output to angle and scale

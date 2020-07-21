@@ -6,9 +6,12 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy message_generation std_msgs
 
 
 add_service_files(
+  DIRECTORY srv 
   FILES
   ComputePtWeights.srv
 )
+
+catkin_python_setup()
 
 generate_messages(
   DEPENDENCIES
@@ -17,8 +20,10 @@ generate_messages(
   geometry_msgs
 )
 
-
 catkin_package(
   
-  CATKIN_DEPENDS message_runtime 
+  CATKIN_DEPENDS message_runtime   
 )
+
+#install(PROGRAMS detect
+#        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

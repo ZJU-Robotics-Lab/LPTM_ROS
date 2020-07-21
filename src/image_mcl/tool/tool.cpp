@@ -3,6 +3,88 @@
 namespace tool
 {
 
+cv::Mat RotateImage(cv::Mat src, double angle)
+{
+	cv::Mat dst;
+	try
+	{		
+   
+		cv::Size dst_sz(src.cols, src.rows);
+		cv::Point2f center(static_cast<float>(src.cols / 2.), static_cast<float>(src.rows / 2.));
+		cv::Mat rot_mat = cv::getRotationMatrix2D(center, angle, 1.0);
+		cv::warpAffine(src, dst, rot_mat, dst_sz);
+	}
+	catch (cv::Exception e)
+	{
+	}
+	
+	return dst;
+}
+
+cv::Mat ResizeMat(cv::Mat src, double scale)
+{
+  cv::Mat dst;
+	try
+	{		
+   
+		cv::Size dst_sz(src.cols, src.rows);
+		cv::Point2f center(static_cast<float>(src.cols / 2.), static_cast<float>(src.rows / 2.));
+		cv::Mat rot_mat = cv::getRotationMatrix2D(center, 0.0, scale);
+		cv::warpAffine(src, dst, rot_mat, dst_sz);
+	}
+	catch (cv::Exception e)
+	{
+	}
+	
+	return dst;
+}
+
+cv::Mat createAlpha(cv::Mat& src)
+{
+	cv::Mat alpha = cv::Mat::zeros(src.rows, src.cols, CV_8UC1);
+	cv::Mat gray = cv::Mat::zeros(src.rows, src.cols, CV_8UC1);
+ 
+	cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
+ 
+	for (int i = 0; i < src.rows; i++)
+	{
+		for (int j = 0; j < src.cols; j++)
+		{
+			// alpha.at<uchar>(i, j) = 255 - gray.at<uchar>(i, j);
+      alpha.at<uchar>(i, j) = 100;
+		}
+	}
+ 
+	return alpha;
+}
+
+int addAlpha(cv::Mat& src, cv::Mat& dst, cv::Mat& alpha)
+{
+	if (src.channels() == 4)
+	{
+		return -1;
+	}
+	else if (src.channels() == 1)
+	{
+		cv::cvtColor(src, src, cv::COLOR_GRAY2RGB);
+	}
+	
+	dst = cv::Mat(src.rows, src.cols, CV_8UC4);
+ 
+	std::vector<cv::Mat> srcChannels;
+	std::vector<cv::Mat> dstChannels;
+	//分离通道
+	cv::split(src, srcChannels);
+ 
+	dstChannels.push_back(srcChannels[0]);
+	dstChannels.push_back(srcChannels[1]);
+	dstChannels.push_back(srcChannels[2]);
+	dstChannels.push_back(alpha);
+	cv::merge(dstChannels, dst);
+ 
+	return 0;
+}
+
 cv::Mat cvMaptoMCLMap(cv::Mat mat)
 {
   for(int i=0;i<mat.cols;i++)

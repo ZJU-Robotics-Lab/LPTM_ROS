@@ -8,6 +8,7 @@ import os
 import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
+import sensor_msgs.msg
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
@@ -44,6 +45,7 @@ def get_gt_tensor(this_gt, size):
     # print("angle_index", angle_index)
 
     return gt_tensor_self
+
 def cv_bridge( img_msg):
         """ cv_bridge does not support python3 and this is extracted from the
             cv_bridge file to convert the msg::Img to np.ndarray
@@ -91,6 +93,69 @@ def cv_bridge( img_msg):
         else:
             img0 = img1
         return img0
+
+numpy_type_to_cvtype = {'uint8': '8U', 'int8': '8S', 'uint16': '16U',
+                                    'int16': '16S', 'int32': '32S', 'float32': '32F',
+                                    'float64': '64F'}
+numpy_type_to_cvtype.update(dict((v, k) for (k, v) in numpy_type_to_cvtype.items()))
+
+cvdepth_to_numpy_depth = {cv2.CV_8U: 'uint8', cv2.CV_8S: 'int8', cv2.CV_16U: 'uint16',
+                                       cv2.CV_16S: 'int16', cv2.CV_32S:'int32', cv2.CV_32F:'float32',
+                                       cv2.CV_64F: 'float64'}
+
+cvtype_to_name = {}
+
+def dtype_with_channels_to_cvtype2(dtype, n_channels):
+    return '%sC%d' % (numpy_type_to_cvtype[dtype.name], n_channels)
+
+def cvtype2_to_dtype_with_channels(cvtype):
+    from cv_bridge.boost.cv_bridge_boost import CV_MAT_CNWrap, CV_MAT_DEPTHWrap
+    return cvdepth_to_numpy_depth[CV_MAT_DEPTHWrap(cvtype)], CV_MAT_CNWrap(cvtype)
+
+# def encoding_to_cvtype2(encoding):
+#     from cv_bridge.boost.cv_bridge_boost import getCvType
+
+#     try:
+#         return getCvType(encoding)
+#     except RuntimeError as e:
+#         raise CvBridgeError(e)
+
+def cv2_to_imgmsg(cvim, encoding = "passthrough"):
+    """
+    Convert an OpenCV :cpp:type:`cv::Mat` type to a ROS sensor_msgs::Image message.
+    :param cvim:      An OpenCV :cpp:type:`cv::Mat`
+    :param encoding:  The encoding of the image data, one of the following strings:
+        * ``"passthrough"``
+        * one of the standard strings in sensor_msgs/image_encodings.h
+    :rtype:           A sensor_msgs.msg.Image message
+    :raises CvBridgeError: when the ``cvim`` has a type that is incompatible with ``encoding``
+    If encoding is ``"passthrough"``, then the message has the same encoding as the image's OpenCV type.
+    Otherwise desired_encoding must be one of the standard image encodings
+    This function returns a sensor_msgs::Image message on success, or raises :exc:`cv_bridge.CvBridgeError` on failure.
+    """
+    
+    if not isinstance(cvim, (np.ndarray, np.generic)):
+        raise TypeError('Your input type is not a numpy array')
+    img_msg = sensor_msgs.msg.Image()
+    img_msg.height = cvim.shape[0]
+    img_msg.width = cvim.shape[1]
+    if len(cvim.shape) < 3:
+        cv_type = dtype_with_channels_to_cvtype2(cvim.dtype, 1)
+    else:
+        cv_type = dtype_with_channels_to_cvtype2(cvim.dtype, cvim.shape[2])
+    if encoding == "passthrough":
+        img_msg.encoding = cv_type
+    else:
+        img_msg.encoding = encoding
+        # Verify that the supplied encoding is compatible with the type of the OpenCV image
+        # if cvtype_to_name[encoding_to_cvtype2(encoding)] != cv_type:
+        #     raise CvBridgeError("encoding specified as %s, but image has incompatible type %s" % (encoding, cv_type))
+    if cvim.dtype.byteorder == '>':
+        img_msg.is_bigendian = True
+    img_msg.data = cvim.tostring()
+    img_msg.step = len(img_msg.data) // img_msg.height
+
+    return img_msg
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2011, Willow Garage, Inc.

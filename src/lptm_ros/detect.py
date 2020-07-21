@@ -2,8 +2,6 @@
 from collections import defaultdict
 import torch.nn.functional as F
 import rospy
-# import cv_bridge
-import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.optim import lr_scheduler
@@ -22,6 +20,10 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from lptm_ros.srv import ComputePtWeights, ComputePtWeightsResponse
 import cv2
+import time
+import threading
+import multiprocessing
+from kornia.filters.kernels import get_gaussian_kernel2d
 
 
 def handle_compute_weight(req):
@@ -67,7 +69,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
     # Each epoch has a training and validation phase
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    # device = torch.device("cpu")
     phase = "val"
 
     model_template.eval()   # Set model to evaluate mode
@@ -85,11 +87,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
             if done_all:
                 weights_for_particle = []
                 since = time.time()
-                # cv2.imshow("source", source_msg)
-                # cv2.waitKey(1000)
-                # print("source", source_msg)
-                # cv2.imshow("template", template_msg)
-                # cv2.waitKey(1000)
+
                 template= default_loader(template_msg, 256)
                 source= default_loader(source_msg, 256)
                 # imshow(template)
@@ -101,49 +99,58 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 # rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
                 #                              model_template, model_source, model_corr2softmax, device )
                 # print("rotation_cal", rotation_cal)
-                rotation_cal, scale_cal = torch.Tensor([-90.4]), torch.Tensor([1])
+                rotation_cal, scale_cal = torch.Tensor([0.0]), torch.Tensor([300./300.]) # qsdjt rot:-108.6  scale:384./300.  gym rot:165  scale:220./200.
                 print("rotation_cal", rotation_cal)
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
                 soft_corr_trans = model_trans_corr2softmax(corr_result_trans)
-                soft_corr_trans.view(-1)
-                m = nn.Softmax(dim=1)
-                soft_corr_trans = m(soft_corr_trans)
-                soft_corr_trans.reshape([1,256,256])
-                # soft_corr_trans = softmax2d(soft_corr_trans, device)
+                soft_corr_trans = soft_corr_trans.unsqueeze(0)
+                gauss = kornia.filters.GaussianBlur2d((49, 49), (10, 10))
+                soft_corr_trans = gauss(soft_corr_trans)
+                soft_corr_trans = soft_corr_trans.squeeze(0)
+                
+                # def update():
+                #     # clear
+                #     imshow(soft_corr_trans[0,:,:])
+                #     plt.show()
+                #     plt.close()
 
-                # print("soft_corr_trans", soft_corr_trans)
-                print("particle number", particle_number)
-                # imshow(corr_result_trans[0,:,:])
+                # # use thread
+                # t = threading.Thread(target=update)
+                # t.start()
+
+                # imshow(soft_corr_trans[0,:,:])
                 # plt.show()
+                # plt.pause(0.1)
                 # plt.close()
+                print(" y_coords[100] ", y_coords[100], x_coords[100])
                 for i in range(particle_number):
-                    # print("x", x_coords[i], "y", y_coords[i])
-                    if y_coords[i]>=180 or y_coords[i] < 0 or x_coords[i] >= 180 or x_coords[i] < 0:
-                        weights = torch.Tensor([0]).to(device)
+                    
+                    if y_coords[i]>=template_msg.shape[0] or y_coords[i] <= 0 or x_coords[i] >= template_msg.shape[0] or x_coords[i] <= 0:
+                        weights = torch.Tensor([1e-10]).to(device)
                     else:
-                        weights = soft_corr_trans[0, int(y_coords[i]*256/180), int(x_coords[i]*256/180)]
-                    # print("Weights", weights)
+                        # print("x", x_coords[i], "y", y_coords[i])
+                        weights = soft_corr_trans[0, int(float(y_coords[i])*256.0/float(template_msg.shape[0])), int(float(x_coords[i])*256.0/float(template_msg.shape[0]))]
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("weight for", i, "is", weights)
-                    # print("coords",  y_coords[i], x_coords[i])
+                    # print("coords",  255-int(float(y_coords[i])*256.0/float(template_msg.shape[0])), 255-int(float(x_coords[i])*256.0/float(template_msg.shape[0])))
+                print("corr max ", torch.max(soft_corr_trans[0,...]))
 
                 # coords_weights_pub.header = header
                 # coords_weights_pub.particle_number = particle_number
+                print("max", weights_for_particle.index(max(weights_for_particle)), np.max(weights_for_particle))
+                print("coords", int(float(y_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])), int(float(x_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])))
                 coords_weights_pub.weights_for_particle = weights_for_particle
-                # print("published", coords_weights_pub)
-                # weights_pub.publish(coords_weights_pub)
 
                 time_elapsed = time.time() - since
                 done1, done2, done_all = 0, 0, 0
-                # print('in detection time {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
                 print("in detection time", time_elapsed)
                 return weights_for_particle
 
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/laser_sat_qsdjt_9epoch.pt"
+    checkpoint_path = "./checkpoints/qsdjt_mse_16epoch_1w_3k.pt"
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"
@@ -153,7 +160,7 @@ if __name__ == '__main__':
     rospy.init_node('Detecter', anonymous=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("The devices that the code is running on:", device)
-    device = torch.device("cpu")
+    # device = torch.device("cpu")
     done1, done2, done_all = 0, 0,0
     coords_weights_pub = ComputePtWeightsResponse()
     

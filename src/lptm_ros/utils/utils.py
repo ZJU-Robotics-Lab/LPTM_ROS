@@ -18,7 +18,10 @@ import shutil
 import math
 from PIL import Image
 import kornia
+import seaborn as sns
 
+def heatmap_show(hm):
+    sns.heatmap(data=hm,square=True) 
 
 def logpolar_filter(shape, device):
     """
@@ -120,7 +123,7 @@ def softargmax2d(input, device, beta=10000):
 
     return result 
 
-def softmax2d(input, device, beta=10000):
+def softmax2d(input, device, beta=100):
     *_, h, w = input.shape
     
     input_orig = input.reshape(*_, h * w)
@@ -189,6 +192,7 @@ def print_metrics(metrics, epoch_samples, phase):
         outputs.append("{}: {:4f}".format(k, metrics[k] / epoch_samples))
 
     print("{}: {}".format(phase, ", ".join(outputs)))
+
 def imshow(tensor, title=None):
     image = tensor.cpu().clone()  # we clone the tensor to not do changes on it
     image = image.squeeze(0)  # remove the fake batch dimension
