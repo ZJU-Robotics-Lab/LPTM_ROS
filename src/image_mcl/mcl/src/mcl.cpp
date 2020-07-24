@@ -16,16 +16,6 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
 
   // gridMapCV = cv::imread("/home/mav-lab/Projects/Air-ground_matching/LPTM_ws/pixel_1_rot_black.png"); //grdiamp for use.
   gridMapCV = cv::imread("/home/mav-lab/qsdjt_sat.png"); //grdiamp for use.
-	// std::vector<cv::Mat> srcChannels;
-	// std::vector<cv::Mat> dstChannels;
-	// //分离通道
-	// cv::split(gridMapCV, srcChannels);
-  // cv::Mat alpha = tool::createAlpha(gridMapCV);
-	// dstChannels.push_back(srcChannels[0]);
-	// dstChannels.push_back(srcChannels[1]);
-	// dstChannels.push_back(srcChannels[2]);
-	// dstChannels.push_back(alpha);
-	// cv::merge(dstChannels, gridMapCV);
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
@@ -43,11 +33,11 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[5] = 0.3; // Y
   template_size = 300; //gym 180// Template(square) size
   init_angle = -105.4; // Rotation init guess [degree]
-  init_scale = 350.0/300.0;
+  init_scale = 380.0/300.0;
   angle_search_area = 3; // Searching area [degree]
 
   //--DO NOT TOUCH THIS PARAMETERS--//
-  imageResolution = 0.1/375.0*300.0; // [m] per [pixel]
+  imageResolution = 0.1/376.0*300.0; // [m] per [pixel]
   tf_laser2robot << 1,0,0,0.0,
                     0,1,0,0,
                     0,0,1,0,
@@ -294,18 +284,20 @@ void mcl::showInMap(cv::Mat local_measurement)
     pred_x = static_cast<int>(std::round((x_all) / imageResolution));
     pred_y = static_cast<int>(std::round((y_all) / imageResolution));
 
-    // cv::Mat dst;
     local_measurement = tool::RotateImage(local_measurement, init_angle);
     local_measurement = tool::ResizeMat(local_measurement, init_scale);
+   
     // cv::Mat alpha = tool::createAlpha(local_measurement);
     // tool::addAlpha(local_measurement, dst, alpha);
-    cout << "tf predx" << pred_x<< " "<< "tf predy" << pred_y << endl;
-    cout << "tf" << pred_x-local_measurement.cols/2 << " "<<  pred_y-local_measurement.rows/2 << endl;
+    cv::Mat merged;
     if(pred_x-local_measurement.cols/2 > 0 && pred_y-local_measurement.rows/2 > 0 && pred_x+local_measurement.cols/2 < showMap.cols && pred_y+local_measurement.rows/2 < showMap.rows){
       cv::Rect roi_rect = cv::Rect(pred_x-local_measurement.cols/2, pred_y-local_measurement.rows/2, local_measurement.cols, local_measurement.rows);
+      cv::addWeighted( local_measurement, 0.6, showMap(roi_rect), 0.4, 0.0, merged);
+      merged.copyTo(showMap(roi_rect));
       // local_measurement.copyTo(showMap(roi_rect));
-      cv::imshow("showmap", showMap(roi_rect));
-      cv::waitKey(1);
+      // cv::imshow("showmap", showMap(roi_rect));
+      // cv::imshow("showmap", showMap(roi_rect));
+      // cv::waitKey(1);
     }
   }
   for(int i=0;i<particles.size();i++)
@@ -319,7 +311,16 @@ void mcl::showInMap(cv::Mat local_measurement)
   }
   cv::circle(showMap,cv::Point(pose_show(0,3)/ imageResolution, pose_show(1,3)/ imageResolution),2,cv::Scalar(0,255,0),-1);
   cv::circle(showMap,cv::Point(pred_x,pred_y),2,cv::Scalar(0,0,255),-1);
+  history_pred_xpos.push_back(pred_x);
+  history_pred_ypos.push_back(pred_y);
+  history_gt_xpos.push_back(pose_show(0,3)/ imageResolution);
+  history_gt_ypos.push_back(pose_show(1,3)/ imageResolution);
 
+  for(int i=0;i<history_pred_xpos.size();i++){
+    cv::circle(showMap,cv::Point(history_pred_xpos[i],history_pred_ypos[i]),2,cv::Scalar(0,0,255),-1);
+    cv::circle(showMap,cv::Point(history_gt_xpos[i],history_gt_ypos[i]),2,cv::Scalar(0,255,0),-1);
+  }
+  
   cv::imshow("MCL2", showMap);
   cv::waitKey(1);
 }

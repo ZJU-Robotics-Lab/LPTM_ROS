@@ -60,6 +60,10 @@ private:
   Eigen::Matrix4f odomBefore;
   Eigen::Matrix4f pose_show;
 
+  std::vector<int> history_pred_xpos;
+  std::vector<int> history_pred_ypos;
+  std::vector<int> history_gt_xpos;
+  std::vector<int> history_gt_ypos;
   ros::NodeHandle nodeHandle_;
   ros::Publisher particle_pose_pub;
   ros::ServiceClient client;
