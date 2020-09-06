@@ -11,7 +11,11 @@ add_service_files(
   ComputePtWeights.srv
 )
 
+<<<<<<< HEAD
 #catkin_python_setup()
+=======
+catkin_python_setup()
+>>>>>>> b409f3f34681a07f1eb21ea261f04abb7e9c02d9
 
 generate_messages(
   DEPENDENCIES

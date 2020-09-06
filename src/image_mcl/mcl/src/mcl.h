@@ -62,12 +62,14 @@ private:
   Eigen::Matrix4f odomFake;
   Eigen::Matrix4f Head_gt;
 
+
   std::vector<int> history_pred_xpos;
   std::vector<int> history_pred_ypos;
   std::vector<int> history_gt_xpos;
   std::vector<int> history_gt_ypos;
   std::vector<int> history_odom_xpos;
   std::vector<int> history_odom_ypos;
+
   ros::NodeHandle nodeHandle_;
   ros::Publisher particle_pose_pub;
   ros::ServiceClient client;

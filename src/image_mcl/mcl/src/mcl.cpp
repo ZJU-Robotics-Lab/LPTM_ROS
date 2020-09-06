@@ -15,7 +15,9 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   Mat temp;
 
   // gridMapCV = cv::imread("/home/mav-lab/Projects/Air-ground_matching/LPTM_ws/pixel_1_rot_black.png"); //grdiamp for use.
+
   gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/qsdjt_sat.png"); //grdiamp for use.
+
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
@@ -29,15 +31,19 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[1] = 0.01; // Translation to Rotation
   odomCovariance[2] = 0.01; // Translation to Translation
   odomCovariance[3] = 0.01; // Rotation to Translation
+
   odomCovariance[4] = 0.35; // X
   odomCovariance[5] = 0.35; // Y
   template_size = 300; //gym 180// Template(square) size
   init_angle = -105.0; // Rotation init guess [degree]
+
   init_scale = 380.0/300.0;
   angle_search_area = 3; // Searching area [degree]
 
   //--DO NOT TOUCH THIS PARAMETERS--//
+
   imageResolution = 0.1/383.0*300.0; // [m] per [pixel]
+
   tf_laser2robot << 1,0,0,0.0,
                     0,1,0,0,
                     0,0,1,0,
@@ -62,15 +68,19 @@ mcl::~mcl()
 void mcl::initializeParticles()
 {
   particles.clear();
+
   std::uniform_real_distribution<float> x_pos(0, template_size * imageResolution-2);
   std::uniform_real_distribution<float> y_pos(0, template_size * imageResolution-2); //heuristic setting. (to put particles into the map)
+
 
   //SET PARTICLES BY RANDOM DISTRIBUTION
   for(int i=0;i<numOfParticle;i++)
   {
     particle particle_temp;
+
     float randomX = x_pos(gen) + 218.6/380.0*300.0;//gym27.5- 9;//26.5 - 9;//245.6/390*300; qsdjt
     float randomY = y_pos(gen) + 8.0/380.0*300.0;//gym30.4- 9;//14.4 + 9;//245.6/390*300; qsdjt
+
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
     particle_temp.score = 1 / (double)numOfParticle;
@@ -292,7 +302,9 @@ void mcl::showInMap(cv::Mat local_measurement)
     cv::Mat merged;
     if(pred_x-local_measurement.cols/2 > 0 && pred_y-local_measurement.rows/2 > 0 && pred_x+local_measurement.cols/2 < showMap.cols && pred_y+local_measurement.rows/2 < showMap.rows){
       cv::Rect roi_rect = cv::Rect(pred_x-local_measurement.cols/2, pred_y-local_measurement.rows/2, local_measurement.cols, local_measurement.rows);
+
       cv::addWeighted( local_measurement, 0.5, showMap(roi_rect), 0.5, 0.0, merged);
+
       merged.copyTo(showMap(roi_rect));
       // local_measurement.copyTo(showMap(roi_rect));
       // cv::imshow("showmap", showMap(roi_rect));
@@ -309,12 +321,15 @@ void mcl::showInMap(cv::Mat local_measurement)
     int yPos = static_cast<int>(std::round(part_y));
     cv::circle(showMap,cv::Point(xPos,yPos),1,cv::Scalar(150,0,0),-1);
   }
+
   Eigen::VectorXf head_theta = tool::eigen2xyzrpy(Head_gt); // {x,y,z,roll,pitch,yaw}
   cout << "HEEEEEEEAAAAAAD"<< head_theta[5]/3.1415926*180.0<< endl;
+
   cv::circle(showMap,cv::Point(pose_show(0,3)/ imageResolution, pose_show(1,3)/ imageResolution),2,cv::Scalar(0,255,0),-1);
   cv::circle(showMap,cv::Point(pred_x,pred_y),2,cv::Scalar(0,0,255),-1);
   history_pred_xpos.push_back(pred_x);
   history_pred_ypos.push_back(pred_y);
+
   history_odom_xpos.push_back((odomFake(0,3)+cos(head_theta[5])*5.0)/imageResolution);
   history_odom_ypos.push_back((odomFake(1,3)-sin(head_theta[5])*5.0)/imageResolution);
   history_gt_xpos.push_back((pose_show(0,3)+cos(head_theta[5])*5.0)/ imageResolution);
@@ -325,6 +340,7 @@ void mcl::showInMap(cv::Mat local_measurement)
     cv::circle(showMap,cv::Point(history_odom_xpos[i],history_odom_ypos[i]),2,cv::Scalar(0,255,0),-1);
     cv::circle(showMap,cv::Point(history_gt_xpos[i],history_gt_ypos[i]),2,cv::Scalar(0,255,255),-1);
   }
+
 
   
   cv::imshow("MCL2", showMap);
@@ -412,6 +428,7 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose)
     // cv::Rect rect(100, 100, 48, 48);
     global_imroi = gridMapCV(rect);
   }
+
   cv::imshow("Aerial View", global_imroi);
   cv::waitKey(1);
   cv::imshow("Ground View", image);
@@ -500,6 +517,7 @@ void mcl::updateImageData(Eigen::Matrix4f pose, Eigen::Matrix4f Head_direction, 
   cout << "Count Step"<< count_step << endl;
   Head_gt = Head_direction;
   pose_show = pose;
+
   odomFake = pose;
   Eigen::Matrix4f odomFake_rot = tool::xyzrpy2eigen(0,0,0,0,0,0.009*count_step*3.14159/180.0);
   odomFake = odomFake_rot * odomFake;  
@@ -507,6 +525,7 @@ void mcl::updateImageData(Eigen::Matrix4f pose, Eigen::Matrix4f Head_direction, 
   std::uniform_real_distribution<float> odom_y_pos(0, 1);
   odomFake(0,3) += (odom_x_pos(gen) - 0)/370.0*300.0;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
   odomFake(1,3) += (odom_y_pos(gen) + 0.01*count_step)/(380.0-0.005*count_step)*300.0;
+
   Eigen::Matrix4f diffOdom =  pose * odomBefore.inverse(); // odom after = odom New * diffOdom
   Eigen::VectorXf diffxyzrpy = tool::eigen2xyzrpy(diffOdom); // {x,y,z,roll,pitch,yaw}
   float diffDistance = sqrt(pow(diffxyzrpy[0],2) + pow(diffxyzrpy[1],2));

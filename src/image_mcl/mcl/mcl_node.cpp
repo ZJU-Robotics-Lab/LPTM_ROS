@@ -45,12 +45,14 @@ class mcl_node
                   0,0,1, odom->pose.pose.position.z,
                   0,0,0,1;
       // cout << "eigenPose" << eigenPose << endl;
+
       Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,-75.0*3.14159/180.0);
       Eigen::Matrix4f head_rot = tool::xyzrpy2eigen(0,0,0,0,0,-15.0*3.14159/180.0);
       eigenPose = static_rot * eigenPose;
       Head_direction = head_rot * Head_direction;
       eigenPose(0,3) += 218.0/380.0*300.0;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
       eigenPose(1,3) += 8.0/380.0*300.0 ;//gym14.4;//25.5;//14.4;//9.2/390*300;  qsjdt
+
       // cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
       
       nav_msgs::Odometry odom_trans;
