@@ -71,7 +71,7 @@ class UNet(nn.Module):
         self.dconv_down2 = double_conv(64, 128)
         self.dconv_down3 = double_conv(128, 256)
         self.dconv_down4 = double_conv(256, 512)
-
+        
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)        
         
@@ -92,7 +92,7 @@ class UNet(nn.Module):
         
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)   
-        
+
         x = self.dconv_down4(x)
         
         x = self.upsample(x)   

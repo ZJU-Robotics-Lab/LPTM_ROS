@@ -59,7 +59,15 @@ private:
   Eigen::Matrix4f tf_laser2robot;
   Eigen::Matrix4f odomBefore;
   Eigen::Matrix4f pose_show;
+  Eigen::Matrix4f odomFake;
+  Eigen::Matrix4f Head_gt;
 
+  std::vector<int> history_pred_xpos;
+  std::vector<int> history_pred_ypos;
+  std::vector<int> history_gt_xpos;
+  std::vector<int> history_gt_ypos;
+  std::vector<int> history_odom_xpos;
+  std::vector<int> history_odom_ypos;
   ros::NodeHandle nodeHandle_;
   ros::Publisher particle_pose_pub;
   ros::ServiceClient client;
@@ -74,22 +82,24 @@ private:
 
   bool isOdomInitialized;
   int predictionCounter;
+  int count_step = 0;
 
   std::mutex g_mutex;
 
   void initializeParticles();
-  void prediction(Eigen::Matrix4f diffPose);
+  void prediction(Eigen::Matrix4f diffPose, cv::Mat local_measurement);
   void weightning(Eigen::Matrix4Xf laser);
   void weightning_NCC(cv::Mat template_image);
   void resampling();
   void LPTM(cv::Mat template_image, Eigen::Matrix4f pose);
+  void showInMap(cv::Mat local_measurement);
   void showInMap();
 
 public:
   mcl(ros::NodeHandle nodeHandle);
   ~mcl();
   void updateLaserData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser);
-  void updateImageData(Eigen::Matrix4f pose, cv::Mat local_measurement);
+  void updateImageData(Eigen::Matrix4f pose, Eigen::Matrix4f Head_direction, cv::Mat local_measurement);
   // float NCC(cv::Mat template_image, cv::Mat global_roi);
 };
 
