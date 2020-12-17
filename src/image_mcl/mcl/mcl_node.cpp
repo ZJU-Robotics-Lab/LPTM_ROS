@@ -20,9 +20,9 @@ class mcl_node
   public:
     mcl_node(ros::NodeHandle nh):nodeHandle_(nh), 
       mclocalizer(nh),
-      subscribe_image(nh,"/elevation_mapping/orthomosaic", 2),
+      subscribe_image(nh,"/elevation_mapping_0/orthomosaic", 2),
       subscribe_pose(nh, "/icp_odom", 2),
-      sync(MySyncPolicy(5), subscribe_pose, subscribe_image)
+      sync(MySyncPolicy(10), subscribe_pose, subscribe_image)
     {
       sync.registerCallback(boost::bind(&mcl_node::callback, this, _1, _2));
       odom_pub_ = nodeHandle_.advertise<nav_msgs::Odometry>("trans_odom", 1);
@@ -46,12 +46,12 @@ class mcl_node
                   0,0,0,1;
       // cout << "eigenPose" << eigenPose << endl;
 
-      Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,-75.0*3.14159/180.0);
-      Eigen::Matrix4f head_rot = tool::xyzrpy2eigen(0,0,0,0,0,-15.0*3.14159/180.0);
+      Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,4.0*3.14159/180.0);
+      Eigen::Matrix4f head_rot = tool::xyzrpy2eigen(0,0,0,0,0,4.0*3.14159/180.0);
       eigenPose = static_rot * eigenPose;
       Head_direction = head_rot * Head_direction;
-      eigenPose(0,3) += 218.0/380.0*300.0;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
-      eigenPose(1,3) += 8.0/380.0*300.0 ;//gym14.4;//25.5;//14.4;//9.2/390*300;  qsjdt
+      eigenPose(0,3) += 88.3/1.155;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
+      eigenPose(1,3) += 52.5/1.155 ;//gym14.4;//25.5;//14.4;//9.2/390*300;  qsjdt
 
       // cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
       

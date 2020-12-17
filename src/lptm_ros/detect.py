@@ -121,12 +121,15 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
                 tranformation_y, tranformation_x, corr_result_trans = detect_translation(template, source, rotation_cal, scale_cal, \
                                                     model_trans_template, model_trans_source, model_trans_corr2softmax, device)
-                soft_corr_trans = model_trans_corr2softmax(corr_result_trans)
+
+            
+                soft_corr_trans = model_trans_corr2softmax(corr_result_trans) + 4
+
                 soft_corr_trans = soft_corr_trans.unsqueeze(0)
                 gauss = kornia.filters.GaussianBlur2d((49, 49), (10, 10))
                 soft_corr_trans = gauss(soft_corr_trans)
                 soft_corr_trans = soft_corr_trans.squeeze(0)
-                
+
                 # def update():
                 #     # clear
                 #     imshow(soft_corr_trans[0,:,:])
@@ -148,6 +151,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
                     else:
                         # print("x", x_coords[i], "y", y_coords[i])
                         weights = soft_corr_trans[0, int(float(y_coords[i])*256.0/float(template_msg.shape[0])), int(float(x_coords[i])*256.0/float(template_msg.shape[0]))]
+                        # print("weights", weights)
                     weights_for_particle.append(weights.cpu().numpy())
                     # print("coords",  255-int(float(y_coords[i])*256.0/float(template_msg.shape[0])), 255-int(float(x_coords[i])*256.0/float(template_msg.shape[0])))
                 grey_map = soft_corr_trans[0,...].cpu().numpy()
@@ -164,7 +168,8 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 imgmsg = cv2_to_imgmsg(corr_map)
                 # coords_weights_pub.header = header
                 # coords_weights_pub.particle_number = particle_number
-                # print("max", weights_for_particle.index(max(weights_for_particle)), np.max(weights_for_particle))
+                print("max", np.max(weights_for_particle))
+                print("min", np.min(weights_for_particle))
                 # print("coords", int(float(y_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])), int(float(x_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])))
 
                 coords_weights_pub.weights_for_particle = weights_for_particle
@@ -179,7 +184,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/qsdjt_mse_16epoch_1w_3k.pt"
+    checkpoint_path = "./checkpoints/checkpoint_cao_garden.pt"
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"

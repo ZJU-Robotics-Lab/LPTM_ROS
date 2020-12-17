@@ -16,15 +16,15 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
 
   // gridMapCV = cv::imread("/home/mav-lab/Projects/Air-ground_matching/LPTM_ws/pixel_1_rot_black.png"); //grdiamp for use.
 
-  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ws/qsdjt_sat.png"); //grdiamp for use.
+  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ROS/caoguangbiao.png"); //grdiamp for use.
 
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
-  numOfParticle = 5000; // Number of Particles.
-  minOdomDistance = 0.1; // [m]
+  numOfParticle = 2500; // Number of Particles.
+  minOdomDistance = 0.01; // [m]
   minOdomAngle = 0; // [deg]
   repropagateCountNeeded = 1; // [num]
   odomCovariance[0] = 0.01; // Rotation to Rotation
@@ -32,17 +32,19 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[2] = 0.01; // Translation to Translation
   odomCovariance[3] = 0.01; // Rotation to Translation
 
-  odomCovariance[4] = 0.35; // X
-  odomCovariance[5] = 0.35; // Y
-  template_size = 300; //gym 180// Template(square) size
-  init_angle = -105.0; // Rotation init guess [degree]
+  odomCovariance[4] = 0.20; // X
+  odomCovariance[5] = 0.20; // Y
+  template_size = 360; //gym 180// Template(square) size
+  init_angle = -178.0; // Rotation init guess [degree]
 
-  init_scale = 380.0/300.0;
-  angle_search_area = 3; // Searching area [degree]
+  init_scale = 1.155;
+
+
+
+  imageResolution = 0.05/1.155; // [m] per [pixel]
+
 
   //--DO NOT TOUCH THIS PARAMETERS--//
-
-  imageResolution = 0.1/383.0*300.0; // [m] per [pixel]
 
   tf_laser2robot << 1,0,0,0.0,
                     0,1,0,0,
@@ -78,8 +80,8 @@ void mcl::initializeParticles()
   {
     particle particle_temp;
 
-    float randomX = x_pos(gen) + 218.6/380.0*300.0;//gym27.5- 9;//26.5 - 9;//245.6/390*300; qsdjt
-    float randomY = y_pos(gen) + 8.0/380.0*300.0;//gym30.4- 9;//14.4 + 9;//245.6/390*300; qsdjt
+    float randomX = x_pos(gen) + 66/1.055;//gym27.5- 9;//26.5 - 9;//245.6/390*300; qsdjt
+    float randomY = y_pos(gen) + 39/1.055;//gym30.4- 9;//14.4 + 9;//245.6/390*300; qsdjt
 
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
@@ -151,86 +153,6 @@ void mcl::prediction(Eigen::Matrix4f diffPose, cv::Mat local_measurement)
 
 }
 
-// void mcl::weightning(Eigen::Matrix4Xf laser)
-// {
-//   float maxScore = 0;
-//   float scoreSum = 0;
-
-//   /* Your work.
-//    * Input : laser measurement data
-//    * To do : update particle's weight(score)
-//    */
-
-//   for(int i=0;i<particles.size();i++)
-//   {
-
-//     Eigen::Matrix4Xf transLaser = particles.at(i).pose* tf_laser2robot* laser; // now this is lidar sensor's frame.
-
-//     //--------------------------------------------------------//
-
-//     float calcedWeight = 0;
-
-//     for(int j=0;j<transLaser.cols();j++)
-//     {
-//       int ptX  = static_cast<int>((transLaser(0, j) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
-//       int ptY = static_cast<int>((transLaser(1, j) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
-
-//       if(ptX<0 || ptX>=gridMapCV.cols || ptY<0 ||  ptY>=gridMapCV.rows) continue; // dismiss if the laser point is at the outside of the map.
-//       else
-//       {
-//         double img_val =  gridMapCV.at<uchar>(ptY,ptX)/(double)255; //calculate the score.
-//         calcedWeight += img_val; //sum up the score.
-//       }
-
-
-//     }
-//     particles.at(i).score = particles.at(i).score + (calcedWeight / transLaser.cols()); //Adding score to particle.
-//     scoreSum += particles.at(i).score;
-//     if(maxScore < particles.at(i).score) // To check which particle has max score
-//     {
-//       maxProbParticle = particles.at(i);
-//       maxProbParticle.scan = laser;
-//       maxScore = particles.at(i).score;
-//     }
-//   }
-//   for(int i=0;i<particles.size();i++)
-//   {
-//     particles.at(i).score = particles.at(i).score/scoreSum; // normalize the score
-//   }
-// }
-
-// void mcl::resampling()
-// {
-//   std::cout<<"Resampling..."<<m_sync_count<<std::endl;
-
-//   //Make score line (roullette)
-//   std::vector<double> particleScores;
-//   std::vector<particle> particleSampled;
-//   double scoreBaseline = 0;
-//   for(int i=0;i<particles.size();i++)
-//   {
-//     scoreBaseline += particles.at(i).score;
-//     particleScores.push_back(scoreBaseline);
-//   }
-
-//   std::uniform_real_distribution<double> dart(scoreBaseline/4, scoreBaseline);
-//   for(int i=0;i<particles.size();i++)
-//   {
-//     double darted = dart(gen); //darted number. (0 to maximum scores)
-//     // cout << "darted" << darted << endl;
-//     auto lowerBound = std::lower_bound(particleScores.begin(), particleScores.end(), darted);
-//     int particleIndex = lowerBound - particleScores.begin(); // Index of particle in particles.
-//     // cout << "lowerBound" << lowerBound << endl;
-
-//     //TODO : put selected particle to array 'particleSampled' with score reset.
-
-//     particle selectedParticle = particles.at(particleIndex); // Which one you have to select?
-//     // selectedParticle.score = 1 / (double)particles.size();
-//     particleSampled.push_back(selectedParticle);
-
-//   }
-//   particles = particleSampled;
-// }
 
 void mcl::resampling()
 {
@@ -246,7 +168,7 @@ void mcl::resampling()
     particleScores.push_back(scoreBaseline);
   }
   
-  std::normal_distribution<double> dart(scoreBaseline, scoreBaseline/2);
+  std::normal_distribution<double> dart(scoreBaseline, scoreBaseline/4);
   cout << "scoreBaseline" << scoreBaseline << endl;
 
   for(int i=0;i<particles.size();i++)
@@ -330,10 +252,10 @@ void mcl::showInMap(cv::Mat local_measurement)
   history_pred_xpos.push_back(pred_x);
   history_pred_ypos.push_back(pred_y);
 
-  history_odom_xpos.push_back((odomFake(0,3)+cos(head_theta[5])*5.0)/imageResolution);
-  history_odom_ypos.push_back((odomFake(1,3)-sin(head_theta[5])*5.0)/imageResolution);
-  history_gt_xpos.push_back((pose_show(0,3)+cos(head_theta[5])*5.0)/ imageResolution);
-  history_gt_ypos.push_back((pose_show(1,3)-sin(head_theta[5])*5.0)/ imageResolution);
+  history_odom_xpos.push_back((odomFake(0,3)+cos(head_theta[5]))/imageResolution);
+  history_odom_ypos.push_back((odomFake(1,3)-sin(head_theta[5]))/imageResolution);
+  history_gt_xpos.push_back((pose_show(0,3)+cos(head_theta[5]))/ imageResolution);
+  history_gt_ypos.push_back((pose_show(1,3)-sin(head_theta[5]))/ imageResolution);
 
   for(int i=0;i<history_pred_xpos.size();i++){
     cv::circle(showMap,cv::Point(history_pred_xpos[i],history_pred_ypos[i]),2,cv::Scalar(0,0,255),-1);
@@ -466,10 +388,16 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose)
 
     for(auto i=0; i < srv.response.weights_for_particle.size(); i++)
     {
-      particles.at(i).score = srv.response.weights_for_particle[i]; 
+      if(srv.response.weights_for_particle[i] > 1e-8)
+      {
+        particles.at(i).score = (srv.response.weights_for_particle[i] - 1.474) *1000;
+      }else{
+        particles.at(i).score = srv.response.weights_for_particle[i];
+      }
+
       scoreSum += particles.at(i).score;
       // weights_visual[i] = particles.at(i).score;
-      // cout << "score" << particles.at(i).score << endl;
+      cout << "score" << particles.at(i).score << endl;
       if(maxScore < particles.at(i).score) // To check which particle has max score
       {
         maxProbParticle = particles.at(i);
@@ -487,6 +415,7 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose)
       particles.at(i).score +=1.e-300;
       particles.at(i).score = particles.at(i).score/scoreSum; // normalize the score
       maxScore = maxScore/scoreSum;
+      // cout << "score" << particles.at(i).score << endl;  
     }
     // first_flag = false;
     get_weights.Signal();
@@ -523,8 +452,10 @@ void mcl::updateImageData(Eigen::Matrix4f pose, Eigen::Matrix4f Head_direction, 
   odomFake = odomFake_rot * odomFake;  
   std::uniform_real_distribution<float> odom_x_pos(0, 1);
   std::uniform_real_distribution<float> odom_y_pos(0, 1);
-  odomFake(0,3) += (odom_x_pos(gen) - 0)/370.0*300.0;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
-  odomFake(1,3) += (odom_y_pos(gen) + 0.01*count_step)/(380.0-0.005*count_step)*300.0;
+  // odomFake(0,3) += (odom_x_pos(gen) - 0)/1.155;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt; caogaungbiao 1.155
+  // odomFake(1,3) += (odom_y_pos(gen) + 0.01*count_step)/(277.2-0.005*count_step)*120;
+  // odomFake(0,3) += odom_x_pos(gen);//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt; caogaungbiao 1.155
+  // odomFake(1,3) += odom_y_pos(gen);
 
   Eigen::Matrix4f diffOdom =  pose * odomBefore.inverse(); // odom after = odom New * diffOdom
   Eigen::VectorXf diffxyzrpy = tool::eigen2xyzrpy(diffOdom); // {x,y,z,roll,pitch,yaw}
