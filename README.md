@@ -16,6 +16,7 @@
 * Basic check:
   * local image size
   * global image size
+  * resolution
   * rotation and ratio
   * the start point of the bag odom
   * the start point of the particle center
@@ -26,3 +27,9 @@
   * DONNOT add the "255 - " in the weight choosing operation because it is not correct
   * check the max weight and the min weight given by DPCN, and tune the parametres to contrast them
   * make the the weight is in a reasonable range and that the wx+b does not make them nagative
+
+## Future works:
+ 
+ * make all this tunable paprams into one ymal file so that the profile could be easily loaded
+ * make use of the DPCN-Global to automatically give the start point
+ * more to be added...
