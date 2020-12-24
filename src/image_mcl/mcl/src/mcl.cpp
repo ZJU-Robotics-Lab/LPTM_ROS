@@ -1,8 +1,13 @@
 #include "mcl.h"
+#include "yaml.h"
+YAML::Node config_params = YAML::LoadFile("/home/jessy104/ROS/LPTM_ROS/src/image_mcl/config/caoguangbiao.yaml");
 
 using namespace std;
 using namespace cv;
 Semaphore get_weights(0);
+
+
+
 
 mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
 {
@@ -16,14 +21,15 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
 
   // gridMapCV = cv::imread("/home/mav-lab/Projects/Air-ground_matching/LPTM_ws/pixel_1_rot_black.png"); //grdiamp for use.
 
-  gridMapCV = cv::imread("/home/jessy104/ROS/LPTM_ROS/caoguangbiao.png"); //grdiamp for use.
+  gridMapCV = cv::imread(config_params["dir_to_global_map"].as<std::string>()); //grdiamp for use.
+
 
   // gridMapCV = tool::cvResizeMat(temp, 1 / 3.54);
   // gridMapCV = tool::cvRotateMat(temp, -27.8);
   cout<< "the map size is " << gridMapCV.cols << " " << gridMapCV.rows << endl;
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
-  numOfParticle = 2500; // Number of Particles.
+  numOfParticle = config_params["Particle_covariance"]["number_of_particle"].as<int>(); // Number of Particles.
   minOdomDistance = 0.01; // [m]
   minOdomAngle = 0; // [deg]
   repropagateCountNeeded = 1; // [num]
@@ -32,16 +38,16 @@ mcl::mcl(ros::NodeHandle nodeHandle): nodeHandle_(nodeHandle)
   odomCovariance[2] = 0.01; // Translation to Translation
   odomCovariance[3] = 0.01; // Rotation to Translation
 
-  odomCovariance[4] = 0.20; // X
-  odomCovariance[5] = 0.20; // Y
-  template_size = 360; //gym 180// Template(square) size
-  init_angle = -178.0; // Rotation init guess [degree]
+  odomCovariance[4] = config_params["Particle_covariance"]["X_Covariance"].as<float>(); // X
+  odomCovariance[5] = config_params["Particle_covariance"]["Y_Covariance"].as<float>(); // Y
+  template_size = config_params["Basic"]["local_image_size"].as<int>(); //gym 180// Template(square) size
+  init_angle = config_params["Basic"]["rotation"].as<float>(); // Rotation init guess [degree]
 
-  init_scale = 1.155;
+  init_scale = config_params["Basic"]["scale_ratio"].as<float>();
 
 
 
-  imageResolution = 0.05/1.155; // [m] per [pixel]
+  imageResolution = config_params["Basic"]["resolution"].as<float>()/init_scale; // [m] per [pixel]
 
 
   //--DO NOT TOUCH THIS PARAMETERS--//
@@ -80,8 +86,8 @@ void mcl::initializeParticles()
   {
     particle particle_temp;
 
-    float randomX = x_pos(gen) + 66/1.055;//gym27.5- 9;//26.5 - 9;//245.6/390*300; qsdjt
-    float randomY = y_pos(gen) + 39/1.055;//gym30.4- 9;//14.4 + 9;//245.6/390*300; qsdjt
+    float randomX = x_pos(gen) + config_params["Odom_and_particles"]["start_location_particle_x"].as<float>()/init_scale;//gym27.5- 9;//26.5 - 9;//245.6/390*300; qsdjt
+    float randomY = y_pos(gen) + config_params["Odom_and_particles"]["start_location_particle_y"].as<float>()/init_scale;//gym30.4- 9;//14.4 + 9;//245.6/390*300; qsdjt
 
     // float randomTheta = theta_pos(gen);
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,0);
@@ -434,6 +440,7 @@ void mcl::LPTM(cv::Mat template_image, Eigen::Matrix4f current_pose)
 
 void mcl::updateImageData(Eigen::Matrix4f pose, Eigen::Matrix4f Head_direction, cv::Mat local_measurement)
 {
+  cout<<"Name_of_Bag"<<config_params["Name_of_Bag"].as<string>()<<endl;
   if(!isOdomInitialized)
   {
     

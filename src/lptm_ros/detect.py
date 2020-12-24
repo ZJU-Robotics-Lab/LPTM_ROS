@@ -25,6 +25,7 @@ import threading
 import multiprocessing
 from kornia.filters.kernels import get_gaussian_kernel2d
 from matplotlib import cm
+import yaml
  
 def get_jet():
  
@@ -115,7 +116,7 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 # rotation_cal, scale_cal, corr_result_rot = detect_rot_scale(template, source,\
                 #                              model_template, model_source, model_corr2softmax, device )
                 # print("rotation_cal", rotation_cal)
-                rotation_cal, scale_cal = torch.Tensor([0.0]), torch.Tensor([300./300.]) # qsdjt rot:-108.6  scale:384./300.  gym rot:165  scale:220./200.
+                rotation_cal, scale_cal = torch.Tensor([0.0]), torch.Tensor([300./300.]) 
 
                 # print("rotation_cal", rotation_cal)
 
@@ -153,7 +154,6 @@ def detect_model(template_path, source_path, model_template, model_source, model
                         weights = soft_corr_trans[0, int(float(y_coords[i])*256.0/float(template_msg.shape[0])), int(float(x_coords[i])*256.0/float(template_msg.shape[0]))]
                         # print("weights", weights)
                     weights_for_particle.append(weights.cpu().numpy())
-                    # print("coords",  255-int(float(y_coords[i])*256.0/float(template_msg.shape[0])), 255-int(float(x_coords[i])*256.0/float(template_msg.shape[0])))
                 grey_map = soft_corr_trans[0,...].cpu().numpy()
                 grey_map = 255 * (grey_map - np.min(grey_map))/(np.max(grey_map)-np.min(grey_map))
 
@@ -168,8 +168,8 @@ def detect_model(template_path, source_path, model_template, model_source, model
                 imgmsg = cv2_to_imgmsg(corr_map)
                 # coords_weights_pub.header = header
                 # coords_weights_pub.particle_number = particle_number
-                print("max", np.max(weights_for_particle))
-                print("min", np.min(weights_for_particle))
+                # print("max", np.max(weights_for_particle))
+                # print("min", np.min(weights_for_particle))
                 # print("coords", int(float(y_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])), int(float(x_coords[weights_for_particle.index(max(weights_for_particle))])*256.0/float(template_msg.shape[0])))
 
                 coords_weights_pub.weights_for_particle = weights_for_particle
@@ -184,11 +184,14 @@ def detect_model(template_path, source_path, model_template, model_source, model
 
 
 if __name__ == '__main__':
-    checkpoint_path = "./checkpoints/checkpoint_cao_garden.pt"
+    config_params = yaml.load(open("/home/jessy104/ROS/LPTM_ROS/src/image_mcl/config/caoguangbiao.yaml"))
+    # checkpoint_path = "./checkpoints/checkpoint_cao_garden.pt"
+    checkpoint_path = config_params["checkpoint"]
     template_path = "/stereo_grey/left/image_raw"
     source_path = "/stereo_grey/right/image_raw"
     mcl_topic = "/particle_pose"
     weights_topic = "/LPTM/weights_for_particles"
+
 
     load_pretrained =True
     rospy.init_node('Detecter', anonymous=True)

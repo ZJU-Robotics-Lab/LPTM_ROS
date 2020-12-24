@@ -4,6 +4,8 @@
 #include <boost/thread.hpp>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include "yaml.h"
+YAML::Node config_params = YAML::LoadFile("/home/jessy104/ROS/LPTM_ROS/src/image_mcl/config/caoguangbiao.yaml");
 using namespace std;
 
 std::vector<Eigen::Matrix4f> vec_poses;
@@ -46,13 +48,14 @@ class mcl_node
                   0,0,0,1;
       // cout << "eigenPose" << eigenPose << endl;
 
-      Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,4.0*3.14159/180.0);
-      Eigen::Matrix4f head_rot = tool::xyzrpy2eigen(0,0,0,0,0,4.0*3.14159/180.0);
+      // cout<<"FUCKKKKK"<<config_params["Particle_covariance"]["odom_orientation"].as<float>()<<endl;
+      Eigen::Matrix4f static_rot = tool::xyzrpy2eigen(0,0,0,0,0,config_params["Odom_and_particles"]["odom_orientation"].as<float>()*3.14159/180.0);
+      Eigen::Matrix4f head_rot = tool::xyzrpy2eigen(0,0,0,0,0,config_params["Odom_and_particles"]["odom_orientation"].as<float>()*3.14159/180.0);
       eigenPose = static_rot * eigenPose;
       Head_direction = head_rot * Head_direction;
-      eigenPose(0,3) += 88.3/1.155;//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
-      eigenPose(1,3) += 52.5/1.155 ;//gym14.4;//25.5;//14.4;//9.2/390*300;  qsjdt
-
+      eigenPose(0,3) += config_params["Odom_and_particles"]["start_location_odom_x"].as<float>()/config_params["Basic"]["scale_ratio"].as<float>();//gym26.5;//27.5;//26.5;//220.5/390*300;  qsjdt
+      eigenPose(1,3) += config_params["Odom_and_particles"]["start_location_odom_y"].as<float>()/config_params["Basic"]["scale_ratio"].as<float>();//gym14.4;//25.5;//14.4;//9.2/390*300;  qsjdt
+      
       // cout << "eigenPose x: " << odom->pose.pose.position.x << " y: " <<odom->pose.pose.position.y << endl;
       
       nav_msgs::Odometry odom_trans;

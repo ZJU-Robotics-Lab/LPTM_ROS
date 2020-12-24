@@ -7,7 +7,7 @@ import numpy as np
 from phase_correlation.phase_corr import phase_corr
 from log_polar.log_polar import polar_transformer
 from utils.utils import *
-print("sys path", sys.path)
+# print("sys path", sys.path)
 from utils.utils import *
 
 class LogPolar(nn.Module):
